@@ -22,7 +22,7 @@ if __name__ == "__main__":
     # result1 = MILC.prediction_errors(image_data)
 
     try:
-        example = ParallelMILC(13)
+        example = ParallelMILC(DeviceType.GPU.value)
     except Exception as ex:
         print(ex)
         input()
