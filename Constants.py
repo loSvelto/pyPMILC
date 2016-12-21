@@ -5,15 +5,14 @@ from numpy import uint16
 
 
 class DeviceType (Enum):
-    """
-
-    """
+    """ Enumeration of the devices for which an implementation is available """
 
     GPU = device_type.GPU
     CPU = device_type.CPU
 
 
 class DataType (Enum):
+    """ Data types managements constants"""
 
     PIXEL = uint8
     PIXEL_MAX = 255

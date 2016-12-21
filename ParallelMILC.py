@@ -9,8 +9,7 @@ class ParallelMILC:
         """Initialise an OpenCL context bounded to this instance and loads the main kernels
 
         Keyword arguments:
-        device_type --  preferred device type (DeviceType type from Constants.py)
-                        default is GPU
+        device_type --  preferred device type (DeviceType type from Constants.py) - default is GPU
         """
 
         # Get all the available platforms
@@ -48,10 +47,20 @@ class ParallelMILC:
         self.program = cl.Program(self.ctx, file_str).build()
 
     def parallel_prediction_errors(self, image):
+        """ Get the MILC prediction errors for a 3D image by means of OpenCL accelerated computation
+
+            Keyword arguments:
+            image --  a 3D numpy array (bitmap image)
+
+            Return:
+            a 3D numpy array of the same shape of "image", containing the prediction errors
+        """
 
         mf = cl.mem_flags
+        # Define the image format for the prediction errors
         err_format = cl.ImageFormat(channel_order=cl.channel_order.R, channel_type=DataType.CL_ERR.value)
 
+        # Define the input image from the numpy 3D array
         source_image = cl.image_from_array(self.ctx, image)
 
         original_shape = numpy.shape(image)
