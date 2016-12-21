@@ -20,3 +20,9 @@ def save_errors(filename, errors):
 def load_errors(filename):
 
     return numpy.load(filename)
+
+
+def message_pause_exit (message) :
+    print(message, "Press any key to exit the program...")
+    input()
+    exit()
