@@ -19,6 +19,7 @@ class ParallelMILC:
         if not platforms:
             raise Exception("No OpenCL platform available")
 
+        # Get a device of the specified type from the first platform available
         devices = platforms[0].get_devices(device_type)
         if not devices:
             raise Exception("No OpenCL device of the type ", device_type, " is available")
