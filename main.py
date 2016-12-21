@@ -32,4 +32,5 @@ if __name__ == "__main__":
     # time2 = time()
     # print("Execution time: ", time2 - time1, "s")
     Utils.save_errors("errors", result)
+    print(result)
     errors = Utils.load_errors("errors.npy")

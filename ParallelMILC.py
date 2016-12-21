@@ -31,6 +31,7 @@ class ParallelMILC:
         self.device_type = device_type
         self.queue = cl.CommandQueue(self.ctx)
 
+        # Load and build the kernel. Filename is hardcoded as it isn't supposed to get changed by users
         self._load_program("part1.cl")
 
     def _load_program(self, filename):
@@ -53,18 +54,21 @@ class ParallelMILC:
 
         source_image = cl.image_from_array(self.ctx, image)
 
+        original_shape = numpy.shape(image)
+        cl_shape = list(reversed(original_shape))
+
         dest_image = cl.Image(
             self.ctx,
             mf.WRITE_ONLY,
             err_format,
-            shape=(58, 256, 256)
+            shape=cl_shape
         )
 
         sampler = cl.Sampler(self.ctx, False, cl.addressing_mode.CLAMP, cl.filter_mode.NEAREST)
 
-        self.program.image_test(self.queue, (256, 256, 58), None, source_image, dest_image, sampler)
+        self.program.image_test(self.queue, original_shape, None, source_image, dest_image, sampler)
 
-        dest_data = numpy.empty(shape=(58, 256, 256), dtype=DataType.ERR.value)
-        cl.enqueue_read_image(self.queue, dest_image, (0, 0, 0), (58, 256, 256), dest_data)
+        output_data = numpy.empty(shape=cl_shape, dtype=DataType.ERR.value)
+        cl.enqueue_read_image(self.queue, dest_image, (0, 0, 0), cl_shape, output_data)
 
-        return dest_data.reshape(256, 256, 58)
+        return output_data.reshape(original_shape)
