@@ -57,7 +57,7 @@ class ParallelMILC:
         original_shape = numpy.shape(image)
         cl_shape = list(reversed(original_shape))
 
-        dest_image = cl.Image(
+        output_image = cl.Image(
             self.ctx,
             mf.WRITE_ONLY,
             err_format,
@@ -66,9 +66,9 @@ class ParallelMILC:
 
         sampler = cl.Sampler(self.ctx, False, cl.addressing_mode.CLAMP, cl.filter_mode.NEAREST)
 
-        self.program.image_test(self.queue, original_shape, None, source_image, dest_image, sampler)
+        self.program.image_test(self.queue, original_shape, None, source_image, output_image, sampler)
 
         output_data = numpy.empty(shape=cl_shape, dtype=DataType.ERR.value)
-        cl.enqueue_read_image(self.queue, dest_image, (0, 0, 0), cl_shape, output_data)
+        cl.enqueue_read_image(self.queue, output_image, (0, 0, 0), cl_shape, output_data)
 
         return output_data.reshape(original_shape)
