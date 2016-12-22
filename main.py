@@ -13,7 +13,7 @@ os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
 
 if __name__ == "__main__":
 
-    if not len(sys.argv) == 5:
+    if not len(sys.argv) == 6:
         Utils.message_pause_exit("USAGE: pyPMILC (-c|-d) <inputImageFile> <outputImageFiles> <width> " +
                                  "<height> <# slices|?> [seq|sequential|forceCPU]\n")
 
@@ -32,9 +32,11 @@ if __name__ == "__main__":
         example = ParallelMILC(DeviceType.GPU.value)
     except Exception as ex:
         Utils.message_pause_exit(ex)
-    time1 = time()
-    result = example.parallel_prediction_errors(image_data_p)
-    time2 = time()
-    print("Execution time: ", time2 - time1, "s")
-    Utils.save_errors(errors_filename, result)
-    errors = Utils.load_errors(errors_filename + ".npy")
+    # time1 = time()
+    # result = example.parallel_prediction_errors(image_data_p)
+    # time2 = time()
+    # print("Execution time: ", time2 - time1, "s")
+    # Utils.save_errors(errors_filename, result)
+    # errors = Utils.load_errors(errors_filename + ".npy")
+    result = example.core_algo()
+    print(result[2, 0, 0])

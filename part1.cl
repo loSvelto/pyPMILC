@@ -100,12 +100,10 @@ __kernel void image_test(read_only image3d_t srcImg, write_only image3d_t dest, 
     unsigned char myVal = checkPixel(read_imageui(srcImg, sampler, coord).x);
     unsigned char predicted = 0;
 
-    if (z > 0)
-    {
+    if (z > 0) {
         predicted = distances_based_linearized_median_predictor(srcImg, sampler, coord);
     }
-    else
-    {
+    else {
         predicted = linearized_median_predictor(srcImg, sampler, coord);
     }
 
@@ -113,6 +111,104 @@ __kernel void image_test(read_only image3d_t srcImg, write_only image3d_t dest, 
 
     write_imageui(dest, (int4)(coord), error);
 
+}
+
+void translate (int gid, constant int head[3], int *_3D)
+{
+	int x = head[0],
+		 y = head[1],
+		 z = 0;
+
+	if (y > 0)
+	{
+		int len = x - y + 1;
+		int maxSeries = ((y + 1) * (2 * len + y)) / 2;
+		if (gid < maxSeries)
+		{
+			int b = 2 * len - 1;
+			int delta = (b * b) + (8 * gid);
+			float sqr = sqrt((float)delta);
+			z = floor((float)((sqr - b) / 2));
+			int displ = gid - (z * (2 * len + (z - 1))) / 2;
+			_3D[0] = head[0] - displ;
+			_3D[1] = head[1] - z + displ;
+			_3D[2] = head[2] + z;
+			return;
+		}
+		else
+		{
+			gid = gid - maxSeries;
+			x = head[0] - 1;
+			z = head[1] + 1;
+		}
+	}
+	int len = x + 1;
+	int b = 2 * len + 1;
+	int delta = (b * b) - (8 * gid);
+	float sqr = sqrt((float)delta);
+	int _z = floor((float)((b - sqr) / 2));
+	int displ = gid - (_z * (2 * len - (_z - 1))) /2;
+	_3D[0] = x - _z - displ;
+	_3D[1] = displ;
+	_3D[2] = _z + z + head[2];
+	return;
+}
+
+unsigned char getPrediction_gpu (image3d_t image,
+		sampler_t sampler,
+		int i, int j, int k)
+{
+	int sx = 0;
+	unsigned char sa = 0, sb = 0, sc = 0,
+					 _sx = 0, _sa = 0, _sb = 0, _sc = 0;
+
+	sa = (read_imageui(image, sampler, (int4)(i-1, j, k, 0))).x;
+	sb = (read_imageui(image, sampler, (int4)(i, j-1, k, 0))).x;
+	sc = (read_imageui(image, sampler, (int4)(i-1, j-1, k, 0))).x;
+	_sx = (read_imageui(image, sampler, (int4)(i, j, k-1, 0))).x;
+	_sa = (read_imageui(image, sampler, (int4)(i-1, j, k-1, 0))).x;
+	_sb = (read_imageui(image, sampler, (int4)(i, j-1, k-1, 0))).x;
+	_sc = (read_imageui(image, sampler, (int4)(i-1, j-1, k-1, 0))).x;
+
+	if (k == 0)
+		sx = (int)((2 * (sa + sb)) / 3) - (sc / 3);
+	else
+		sx = (int)_sx + ((2 * ((sa - _sa) + (sb - _sb)) - (sc - _sc)) / 3);
+
+	unsigned char prediction = checkPixel(sx);
+	return prediction;
+}
+
+kernel void executeParallelDecompression (constant int head[3],
+		 read_only image3d_t errors,
+		 read_only image3d_t image,
+		 write_only image3d_t output,
+		 sampler_t sampler,
+		 int width, int height, int numOfSlices)
+{
+	int pos[3] = {0, 0, 0};
+	int gid = get_global_id(0);
+	translate(gid, head, pos);
+	int i = pos[0];
+	int j = pos[1];
+	int k = pos[2];
+
+    int4 coord = (int4)(i, j, k, 0);
+
+	unsigned char predicted = getPrediction_gpu(image, sampler, i, j, k);
+	unsigned short mappedError = (read_imageui(errors, sampler, coord)).x;
+	unsigned char value = predicted + unmapError(mappedError);
+
+	write_imageui(output, coord, value);
+}
+
+kernel void map_test (constant int head[3], write_only image3d_t output) {
+    unsigned short head0 = head[0];
+    unsigned short head1 = head[1];
+    unsigned short head2 = head[2];
+    write_imageui(output, (int4)(0, 0, 0, 0), head0);
+    write_imageui(output, (int4)(0, 0, 1, 0), head1);
+    write_imageui(output, (int4)(0, 0, 2, 0), head2);
 }
 
 //#endif
